@@ -128,9 +128,12 @@ public:
 	orb_id_t	get_topic() const { return get_orb_meta(_orb_id); }
 	ORB_PRIO	get_priority() { return advertised() ? _node->get_priority() : ORB_PRIO_UNINITIALIZED; }
 
+	uint32_t	get_last_generation() const { return _last_generation; }
+
 protected:
 
 	friend class SubscriptionCallback;
+	friend class SubscriptionCallbackWorkItem;
 
 	DeviceNode		*get_node() { return _node; }
 

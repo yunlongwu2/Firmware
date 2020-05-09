@@ -48,7 +48,7 @@
 class Integrator
 {
 public:
-	Integrator(uint32_t auto_reset_interval = 2500 /* 400 Hz */, bool coning_compensation = false);
+	Integrator(uint32_t auto_reset_interval = 5000 /* 200 Hz */, bool coning_compensation = false);
 	~Integrator() = default;
 
 	/**
@@ -68,10 +68,21 @@ public:
 	 *
 	 * @param auto_reset_interval	    	New reset time interval for the integrator (+- 10%).
 	 */
-	void set_autoreset_interval(uint32_t auto_reset_interval) { _auto_reset_interval = 0.90f * auto_reset_interval; }
+	void set_autoreset_interval(uint32_t auto_reset_interval)
+	{
+		if (auto_reset_interval > 0) {
+			_auto_reset_interval = 0.9f * auto_reset_interval;
+		}
+	}
+
+	/* Force a reset and return current integral
+	 *
+	 * @param integral_dt	Get the dt in us of the current integration.
+	 */
+	matrix::Vector3f reset(uint32_t &integral_dt);
 
 private:
-	uint32_t _auto_reset_interval{0};			/**< the interval after which the content will be published
+	uint32_t _auto_reset_interval{5000};			/**< the interval after which the content will be published
 							     and the integrator reset, 0 if no auto-reset */
 
 	uint64_t _last_integration_time{0};		/**< timestamp of the last integration step */

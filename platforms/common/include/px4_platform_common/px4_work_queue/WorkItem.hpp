@@ -39,7 +39,7 @@
 #include <containers/IntrusiveQueue.hpp>
 #include <px4_platform_common/defines.h>
 #include <drivers/drv_hrt.h>
-
+#include <lib/mathlib/mathlib.h>
 #include <lib/perf/perf_counter.h>
 
 namespace px4
@@ -60,7 +60,16 @@ public:
 	inline void ScheduleNow()
 	{
 		if (_wq != nullptr) {
-			_wq->Add(this);
+			if (_interval_us == 0) {
+				_wq->Add(this);
+
+			} else {
+				const hrt_abstime now = hrt_absolute_time();
+
+				if (now >= _last_run + _interval_us) {
+					_wq->Add(this);
+				}
+			}
 		}
 	}
 
@@ -77,6 +86,7 @@ public:
 
 	const char *ItemName() const { return _item_name; }
 
+	void set_interval_us(uint32_t interval_us) { _interval_us = interval_us; }
 protected:
 
 	explicit WorkItem(const char *name, const wq_config_t &config);
@@ -89,9 +99,15 @@ protected:
 	 * Remove work item from the runnable queue, if it's there
 	 */
 	void ScheduleClear();
+
 protected:
 
-	void RunPreamble() { _run_count++; }
+	void RunPreamble()
+	{
+		const hrt_abstime now = hrt_absolute_time();
+		_last_run = math::constrain(_last_run + _interval_us, now - _interval_us, now);
+		_run_count++;
+	}
 
 	friend void WorkQueue::Run();
 	virtual void Run() = 0;
@@ -111,6 +127,8 @@ protected:
 	float average_rate() const;
 	float average_interval() const;
 
+	hrt_abstime     _last_run{0};
+	uint32_t        _interval_us{0};
 
 	hrt_abstime	_start_time{0};
 	unsigned	_run_count{0};

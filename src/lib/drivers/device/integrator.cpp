@@ -44,15 +44,15 @@
 
 #include <drivers/drv_hrt.h>
 
+using matrix::Vector3f;
+
 Integrator::Integrator(uint32_t auto_reset_interval, bool coning_compensation) :
 	_coning_comp_on(coning_compensation)
 {
 	set_autoreset_interval(auto_reset_interval);
 }
 
-bool
-Integrator::put(const hrt_abstime &timestamp, const matrix::Vector3f &val, matrix::Vector3f &integral,
-		uint32_t &integral_dt)
+bool Integrator::put(const hrt_abstime &timestamp, const Vector3f &val, Vector3f &integral, uint32_t &integral_dt)
 {
 	if (_last_integration_time == 0) {
 		/* this is the first item in the integrator */
@@ -94,7 +94,7 @@ Integrator::put(const hrt_abstime &timestamp, const matrix::Vector3f &val, matri
 	_last_integration_time = timestamp;
 
 	// Only do auto reset if auto reset interval is not 0.
-	if (_auto_reset_interval > 0 && (timestamp - _last_reset_time) >= _auto_reset_interval) {
+	if ((timestamp - _last_reset_time) >= _auto_reset_interval) {
 
 		// apply coning corrections if required
 		if (_coning_comp_on) {
@@ -114,8 +114,20 @@ Integrator::put(const hrt_abstime &timestamp, const matrix::Vector3f &val, matri
 	}
 }
 
-void
-Integrator::_reset(uint32_t &integral_dt)
+Vector3f Integrator::reset(uint32_t &integral_dt)
+{
+	Vector3f integral{_alpha};
+
+	if (_coning_comp_on) {
+		integral += _beta;
+	}
+
+	_reset(integral_dt);
+
+	return integral;
+}
+
+void Integrator::_reset(uint32_t &integral_dt)
 {
 	_alpha.zero();
 	_last_alpha.zero();
